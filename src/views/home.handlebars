@@ -1,0 +1,47 @@
+
+
+{{> menu}}
+<h1>Productos</h1>
+
+<h3>
+    {{#if login}}
+    Bienvenido a la Tienda, {{usuario.nombre}}!
+    {{else}}Bienvenido a la Tienda, Invitado!
+    <p>Para agregar productos al carrito, por favor <a href="/login">iniciar sesión</a>.</p>
+    {{/if}}
+</h3>
+
+{{#if currentCategory}}
+  <h2>Productos de la categoría {{currentCategory}}</h2>
+{{else}}
+  <h2>Todos los productos</h2>
+{{/if}}
+
+{{#if message}}
+<h4>No existen productos</h4>
+{{/if}}
+
+{{#each products}}
+  <div class="product">
+    <img src="{{thumbnails.[0]}}" alt="{{title}}">
+    <h2>{{title}}</h2>
+    <p>{{description}}</p>
+    <p>Precio: {{price}}</p>
+    <p>Stock: {{stock}}</p>
+    <p>Categoría: {{category}}</p>
+    <button onclick="agregar('{{_id}}', '{{title}}', '{{usuario.carrito}}')">Agregar al carrito</button>
+  </div>
+{{/each}}
+
+<script>
+const agregar = async (id, title, carrito) => {
+    let resultado = await fetch('/api/carts/{{usuario.carrito}}/product/'+id, {
+        method: "POST"
+    });
+
+    if (resultado.ok) {
+        const confirmacion = window.alert('Tu producto se ha agregado correctamente al carrito');
+    }
+};
+
+</script>

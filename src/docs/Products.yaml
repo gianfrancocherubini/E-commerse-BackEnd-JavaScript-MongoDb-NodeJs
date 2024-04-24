@@ -1,0 +1,389 @@
+
+
+openapi: 3.0.0
+info:
+  title: API Backend Ecommerce - Products
+  version: 1.0.0
+  description: Documentación de la API para el manejo de productos
+paths:
+  /:
+    get:
+      summary: Buscar los productos y renderizarlos en vista home.handlebars
+      tags:
+        - Products
+      description: Renderiza la vista de inicio con los productos y funcionalidades de la tienda. Y permite filtrar los productos por categoría.
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filtrar productos por categoría.
+      responses:
+        '200':
+          description: Éxito. Página de inicio renderizada correctamente con los productos de la base de datos.
+          content:
+            text/html:
+              schema: 
+                $ref: '#/components/schemas/Product'
+              example: |
+                {{> menu}}
+                <h1>Productos</h1>
+                
+                <h3>
+                    {{#if login}}
+                    Bienvenido a la Tienda, {{usuario.nombre}}!
+                    {{else}}Bienvenido a la Tienda, Invitado!
+                    <p>Para agregar productos al carrito, por favor <a href="/login">iniciar sesión</a>.</p>
+                    {{/if}}
+                </h3>
+
+                {{#if currentCategory}}
+                  <h2>Productos de la categoría {{currentCategory}}</h2>
+                {{else}}
+                  <h2>Todos los productos</h2>
+                {{/if}}
+
+                {{#each products}}
+                  <div class="product">
+                    <img src="{{thumbnails.[0]}}" alt="{{title}}">
+                    <h2>{{title}}</h2>
+                    <p>{{description}}</p>
+                    <p>Precio: {{price}}</p>
+                    <p>Stock: {{stock}}</p>
+                    <p>Categoría: {{category}}</p>
+                    <button onclick="agregar('{{_id}}', '{{title}}', '{{usuario.carrito}}')">Agregar al carrito</button>
+                  </div>
+                {{/each}}
+
+                <script>
+                  const agregar = async (id, title, carrito) => {
+                    let resultado = await fetch('/api/carts/{{usuario.carrito}}/product/'+id, { method: "POST" });
+                    if (resultado.ok) {
+                      const confirmacion = window.alert('Tu producto se ha agregado correctamente al carrito');
+                    }
+                  };
+                </script>
+        '500':
+          description: Error. Error al obtener los productos y renderizarlos en la vista home.handlebars.
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Error. Error inesperado en el servidor - Intente más tarde, o contacte a su administrador.
+
+  /api/products:
+    post:
+      summary: Crear un nuevo producto
+      tags:
+        - Products
+      description: 
+        Crear un producto nuevo en la base de datos cumpliendo con todas sus caracteristicas y validaciones.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          description: Los datos del producto que se crea.
+          schema:
+            type: object
+            $ref: '#/components/schemas/Product'
+      responses:
+        '201':
+          description: Producto creado correctamente!
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica que la operacion de creacion de producto fue exitosa.
+                  message:
+                    type: string
+                    description: Mensaje de éxito
+                  newProductData:
+                    $ref: '#/components/schemas/Product'
+              example:
+                success: true
+                message: Producto agregado correctamente.
+                newProductData:
+                  title: Producto de ejemplo
+                  description: Descripción del producto de ejemplo
+                  price: 19.99
+                  thumbnails:
+                    - https://example.com/image1.jpg
+                  code: ABC123
+                  stock: 100
+                  category: Electronics
+                  
+        '400_field_missing':
+          description: Error de validación en los datos del producto ya que todos los campos son obligatorios
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Mensaje de error. Todos los campos del producto son obligatorios para su creacion.
+              example:
+                error: El campo 'title' es obligatorio.
+        '400_invalid_url':
+          description: Error de validacion de URL ya que son invalidas 
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Mensaje de error de validacion por no ingresar URL de imagenes validas.
+              example:
+                error: Las URL de las imagenes no son correctas. Por favor verifique.
+        '400_existing_product':
+          description: Error de creacion por producto existente ya que existe el codigo del producto ingresado.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Mensaje de error por codigo de producto ya existente.
+              example:
+                error: Ya existe un producto con el codigo ingresado.
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Descripción del error interno
+              example:
+                error: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`.
+
+  /api/products/:pid:
+    put:
+      summary: Modificar un producto a traves de su id.
+      tags:
+        - Products
+      description: 
+        Modifica un producto existente en la base de datos. Los usuarios premium solo pueden modificar sus productos. No se puede modificar el id del producto. 
+      parameters:
+        - in: path
+          name: pid
+          schema:
+            type: string
+          required: true
+          description: El ID del producto que se desea modificar.
+        - in: body
+          name: body
+          required: true
+          description: Los datos del producto que se desean modificar.
+          schema:
+            type: object
+            $ref: '#/components/schemas/Product'
+      responses:
+        '200':
+          description: Producto modificado correctamente, se detallan las propiedades modificadas!
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica que la operacion de modificacion del producto fue exitosa.
+                  message:
+                    type: string
+                    description: Porducto actualizado correctamente.
+                  newProductData:
+                    $ref: '#/components/schemas/Product'
+              example:
+                success: true
+                message: Producto modificado correctamente.
+                newProductData:
+                  title: Modificacion del titulo del producto
+                  description: Modificacion en la descripción del producto.
+                  
+                  
+        '404':
+          description: Error al encontrar el producto para su modificacion, no existe el producto.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Mensaje de error. No se encontro el producto.
+              example:
+                error: No se ha encontrado el producto.
+        '400':
+          description: Error en la modificacion del id. No esta permitido.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error al intentar modificar el id de producto.
+              example:
+                error: No se puede modificar la propiedad _id.
+        '403':
+          description: Error al intentar modificar el producto. Los usuarios premium solo pueden modificar los productos que son propios.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Permisos denegados.
+              example:
+                error: No tiene permiso para modificar este producto
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Descripción del error interno
+              example:
+                error: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`.
+
+    /api/products/:pid:
+    delete:
+      summary: Eliminar un producto a traves de su id.
+      tags:
+        - Products
+      description: 
+        Elimina un producto de la base de datos. Los usuarios. Si el usuario es premium, solo puede modificar los productos creados por el. 
+      parameters:
+        - in: path
+          name: pid
+          schema:
+            type: string
+          required: true
+          description: El ID del producto que se desea eliminar.
+      responses:
+        '200':
+          description: Producto eliminado correctamente de la base de datos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica que la operacion de modificacion del producto fue exitosa.
+                  message:
+                    type: string
+                    description: Porducto eliminado correctamente.
+              example:
+                success: true
+                message: Producto elimiando correctamente.
+        '404':
+          description: Error al encontrar el producto para su eliminacion, no existe el producto.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Mensaje de error. No se encontro el producto.
+              example:
+                error: No se ha encontrado el producto.
+        '403':
+          description: Error al intentar eliminar el producto. Los usuarios premium solo pueden eliminar los productos que son propios.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Permisos denegados.
+              example:
+                error: No tiene permiso para modificar este producto
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Descripción del error interno
+              example:
+                error: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`.
+
+
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Título del producto.
+        description:
+          type: string
+          description: Descripción del producto.
+        price:
+          type: number
+          description: Precio del producto.
+        thumbnails:
+          type: array
+          items:
+            type: string
+          description: URLs de las imágenes del producto.
+        code:
+          type: string
+          description: Código único del producto.
+        stock:
+          type: number
+          description: Cantidad en stock del producto.
+        category:
+          type: string
+          description: Categoría del producto.
+        
+      required:
+        - title
+        - description
+        - price
+        - thumbnails
+        - code
+        - stock
+        - category
+        
+
+    Usuario: 
+      type: object
+      properties:
+        nombre:
+          type: string
+          description: El nombre del usuario.
+        email:
+          type: string
+          description: El correo electrónico del usuario.
+        password:
+          type: string
+          description: La contraseña del usuario.
+        rol:
+          type: string
+          enum: ['usuario', 'administrador', 'premium']
+          default: 'usuario'
+          description: El rol del usuario.
+        carrito:
+          type: string
+          description: El ID del carrito del usuario.

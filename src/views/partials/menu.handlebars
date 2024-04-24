@@ -1,0 +1,19 @@
+
+
+<ul>
+    <li><a href="/">Home</a></li>
+    {{#if login}}
+        {{#if admin}}
+            <li><a href="/usuarios">Usuarios Generales</a></li>
+            <li><a href="/logout">Logout</a></li>
+        {{else}}
+            <li><a href="/carrito/{{usuario.carrito}}">Carrito</a></li>
+            <li><a href="/usuario">Perfil</a></li>
+            <li><a href="/logout">Logout</a></li>
+        {{/if}}
+    {{else}}
+        <li><a href="/login">Login</a></li>
+        <li><a href="/registro">Registro</a></li>
+        <li><a href="/recuperoPassword">Recuperar Contraseña</a></li>
+    {{/if}}
+</ul>

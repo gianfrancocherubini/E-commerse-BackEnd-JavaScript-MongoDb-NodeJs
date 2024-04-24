@@ -1,0 +1,21 @@
+
+
+{{>menu}}
+
+    <h2>Recuperar Contraseña</h2>
+
+        {{#if error}}
+        <div style="color: red;">{{error}}</div>
+        {{/if}}
+
+        {{#if mensaje}}
+        <div style="color: green;">{{mensaje}}</div>
+        {{/if}}
+
+    <form action="/api/usuario/recupero01" method="POST">
+
+        <label for="email">Ingrese su correo electrónico:</label><br>
+        <input type="email" id="email" name="email" required><br><br>
+        <button type="submit">Recuperar Contraseña</button>
+        
+    </form>

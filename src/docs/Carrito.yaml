@@ -1,0 +1,412 @@
+
+
+openapi: 3.0.0
+info:
+  title: API Backend Ecommerce - Carrito
+  version: 1.0.0
+  description: Documentación de la API para el manejo de carrito de compras
+
+paths:
+  /carrito/{cid}:  
+    get:
+      summary: Buscar el carrito de compras por id y renderizarlo en la vista carrito.handlebars
+      tags:
+        - Carrito
+      description: Renderiza la vista de carrito con los productos que contiene el mismo.
+      parameters:
+        - in: path
+          name: cid  
+          schema:
+            type: string
+          required: true
+          description: El ID del carrito que se desea renderizar.
+      responses:
+        '200':
+          description: Éxito. Página de inicio renderizada correctamente con los productos de la base de datos. Ademas renderiza el precio total del carrito, que es la suma de los precios de los productos multiplicados por su cantidad.
+          content:
+            text/html:
+              schema: 
+                $ref: '#/components/schemas/Cart' 
+              example: |
+                {{>menu}}
+                <h1>Carrito de compras</h1>
+                {{#if carts.items.length}}
+                  <ul>
+                    {{#each carts.items}}
+                      <li>
+                        <img src="{{this.product.thumbnails.[0]}}" alt="{{this.product.title}}"> 
+                        <h2>{{this.product.title}}</h2>
+                        <p>Descripción: {{this.product.description}}</p>
+                        <p>Precio: {{this.product.price}}</p>
+                        <p>Categoría: {{this.product.category}}</p>
+                        <p>Cantidad: {{this.quantity}}</p>
+                        <button onclick="eliminarProducto('{{this.product._id}}','{{usuario.carrito}}')">Eliminar del carrito</button>
+                      </li>
+                    {{/each}}
+                    <h3>Total: {{totalCartPrice}} </h3>
+                    <button onclick="realizarCompra('{{usuario.carrito}}')">Comprar</button>
+                  </ul>
+                {{else}}
+                  <p>El carrito está vacío.</p>
+                {{/if}}
+
+                <br>
+
+                <script>
+                  // Funciones JavaScript
+                </script>
+        '404':
+          description: Error al encontrar el carrito, no existe el carrito de compras.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Mensaje de error. No se encontró el carrito.
+              example:
+                error: No se ha encontrado el carrito específico.
+        '400':
+          description: Error. Se debe proporcionar un ID de carrito válido.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error el id del carrito no es válido.
+              example:
+                error: El ID del carrito proporcionado no es válido.
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Descripción del error interno
+              example:
+                error: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador
+
+  /api/carts:
+    post:
+      summary: Crear un carrito
+      tags:
+        - Carrito
+      responses:
+        '201':
+          description: Carrito creado correctamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa.
+                  message:
+                    type: string
+                    description: Mensaje de éxito.
+                  cart:
+                    $ref: '#/components/schemas/Cart'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Descripción del error interno
+              example:
+                error: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador
+
+  /api/carts/{cid}/product/{pid}:
+    post:
+      summary: Agregar un producto al carrito
+      tags:
+        - Carrito
+      parameters:
+        - in: path
+          name: cid
+          required: true
+          schema:
+            type: string
+          description: ID del carrito
+        - in: path
+          name: pid
+          required: true
+          schema:
+            type: string
+          description: ID del producto a agregar
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                  description: Cantidad del producto a agregar (por defecto 1)
+      responses:
+        '200':
+          description: Producto agregado correctamente al carrito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: Error. Parámetros inválidos. Se deben proporcionar un ID de carrito y un ID de producto válidos.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error. Se deben proporcionar un ID de carrito y un ID de producto.
+              example:
+                error: Se deben proporcionar un ID de carrito y un ID de producto válidos.
+        '403':
+          description: Error. El usuario premium, no puede agregar al carrito productos propios.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error. No puede agregar al carrito productos propios.
+              example:
+                error: El usuario premium, no puede agregar al carrito productos propios.
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador.
+              example:
+                error: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador.
+
+    delete:
+      summary: Eliminar un producto del carrito.
+      tags:
+        - Carrito
+      parameters:
+        - in: path
+          name: cid
+          required: true
+          schema:
+            type: string
+          description: ID del carrito
+        - in: path
+          name: pid
+          required: true
+          schema:
+            type: string
+          description: ID del producto a eliminar
+      responses:
+        '200':
+          description: Producto eliminado correctamente del carrito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: Parámetros inválidos.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Descripción del error.
+              example:
+                error: Se deben proporcionar un ID de carrito y un ID de producto válidos.
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Descripción del error interno.
+              example:
+                error: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador.
+ 
+  /api/carts/{cid}:
+    delete:
+      summary: Eliminar un carrito de compras por ID
+      tags:
+        - Carrito
+      parameters:
+        - in: path
+          name: cid
+          required: true
+          schema:
+            type: string
+          description: ID del carrito a eliminar
+      responses:
+        '200':
+          description: Carrito eliminado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: El carrito fue eliminado correctamente.
+              example:
+                message: Producto eliminado correctamente.
+        '400':
+          description: Error. Se debe proporcionar un ID de carrito válido.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error. Se deben proporcionar un ID de carrito válido.
+              example:
+                error: Se deben proporcionar un ID de carrito válido.
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador.
+              example:
+                error: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador.
+  /api/carts/{cid}/purchase:
+    post:
+      summary: Realizar la compra de los productos en el carrito
+      tags:
+        - Compra
+      parameters:
+        - in: path
+          name: cid
+          required: true
+          schema:
+            type: string
+          description: ID del carrito
+      responses:
+        '200':
+          description: Éxito. Se ha generado el ticket de compra correctamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: object
+                    properties:
+                      purchaser:
+                        type: string
+                        description: Correo electrónico del comprador
+                      code:
+                        type: string
+                        description: Código del ticket generado
+                      amount:
+                        type: number
+                        description: Monto total de la compra
+                      purchase_datetime:
+                        type: string
+                        format: date-time
+                        description: Fecha y hora de la compra
+                  message:
+                    type: string
+                    description: Mensaje de éxito
+              example:
+                ticket:
+                  purchaser: ejemplo@correo.com
+                  code: ABC123
+                  amount: 50.00
+                  purchase_datetime: 2024-03-13T15:45:00Z
+                message: Ticket generado correctamente.
+        '404':
+          description: Error. El carrito no fue encontrado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Carrito no encontrado.
+              example:
+                error: Carrito no encontrado.
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador.
+              example:
+                error: Error inesperado en el servidor - Intente más tarde, o contacte a su administrador.
+
+components:
+  schemas:
+    CartItem:
+      type: object
+      properties:
+        product:
+          type: string
+          description: ID del producto en el carrito.
+        quantity:
+          type: integer
+          description: Cantidad del producto en el carrito.
+      required:
+        - product
+        - quantity
+
+    Cart:
+      type: object
+      properties:
+        items:
+          type: array
+          description: Elementos en el carrito.
+          items:
+            $ref: '#/components/schemas/CartItem'
+      required:
+        - items
+
+    TicketDetails:
+      type: object
+      properties:
+        purchaser:
+          type: string
+          description: Correo electrónico del comprador.
+        code:
+          type: string
+          description: Código del ticket generado.
+        amount:
+          type: number
+          description: Monto total de la compra.
+        purchase_datetime:
+          type: string
+          format: date-time
+          description: Fecha y hora de la compra.
+ 

@@ -1,0 +1,49 @@
+
+
+{{> menu}}
+
+<h2>Usuarios</h2>
+<hr>
+
+{{#each usuarios}}
+  <div class="usuarios">
+    <p>Nombre: <strong>{{nombre}}</strong> </p>
+    <p>Correo Electrónico: <strong>{{email}}</strong></p>
+    <p>rol: <strong>{{rol}}</strong></p>
+    <button onclick="cambiarRolUsuario('{{_id}}')">Cambiar Rol</button>
+    <button onclick="eliminarUsuario('{{_id}}')">Eliminar Usuario</button>
+  </div>
+{{/each}}
+
+
+<script>
+
+const cambiarRolUsuario = async (id) => {
+  try {
+    
+    let resultado = await fetch("/api/usuario/premium/" + id, {
+      method: "post"
+    });
+
+    if (resultado.ok) {
+      alert(`Has cambiado exitosamente el rol del usuario`);
+      location.reload();
+    } else {
+      req.logger.error("La solicitud POST para cambiar el rol no fue exitosa.");
+    }
+  } catch (error) {
+    req.logger.error("Error:", error);
+  }
+};
+
+const eliminarUsuario = async (id) => {
+    let resultado = await fetch('/api/usuario/delete/'+id, {
+        method: "DELETE"
+    });
+
+    if (resultado.ok) {
+        alert('se ha eliminado correctamente el usuario');
+        location.reload();
+    }
+};
+</script>

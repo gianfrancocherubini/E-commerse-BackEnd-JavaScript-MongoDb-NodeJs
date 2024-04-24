@@ -1,0 +1,32 @@
+
+
+<h2>Restablecer Contraseña</h2>
+<hr>
+
+<h2>Ingrese su nueva contraseña:</h2>
+
+    {{#if error }}
+        <div style="color: red;">{{error}}</div>
+    {{/if}}
+
+
+<form action="/api/usuario/recupero03" method="post">
+    
+    <input type="password" name="password" id="password" placeholder="Ingrese nueva contraseña">
+    <input type="password" name="password2" id="password2" placeholder="Repita la contraseña">
+    <input type="text" name="token" id="token" hidden>
+    <br>
+    <input type="submit" value="Resetear">
+</form>
+
+<script>
+    let params=new URLSearchParams(window.location.search)
+    let token=params.get("token")
+    if(!token){
+        alert("error")
+    }else{
+        console.log(token)
+        let inputToken=document.getElementById("token")
+        inputToken.value=token
+    }
+</script>
